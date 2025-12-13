@@ -77,5 +77,5 @@ Write a concise HARO pitch:
         )
 
     # Groq client returns .choices[0].message.content
-    content = response.choices[0].message["content"]
+    content = response.choices[0].message.content
     return content.strip()
