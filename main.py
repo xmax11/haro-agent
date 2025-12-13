@@ -8,6 +8,7 @@ from haro_parser import parse_haro_email
 from pitch_generator import generate_pitch
 from sheets_client import log_pitch
 
+
 load_dotenv()
 
 GMAIL_USER = os.getenv("GMAIL_USER")
@@ -57,7 +58,10 @@ def process_haro_once():
         # For now, process all relevant queries inside the same HARO email
         for q in queries:
             pitch = generate_pitch(q)
-            send_reply(service, email["threadId"], email["subject"], pitch, GMAIL_USER)
+            from gmail_client import extract_reply_to_address
+            reply_to = extract_reply_to_address(email["body"])
+            send_reply(service, email["threadId"], email["subject"], pitch, reply_to, GMAIL_USER)
+
             log_pitch(q, pitch, status="Sent")
             print(f"✅ Pitch sent for: {q['title']}")
 

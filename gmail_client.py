@@ -5,7 +5,18 @@ from datetime import datetime, timezone
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+import re
 
+def extract_reply_to_address(email_body: str) -> str | None:
+    """
+    HARO emails include a line like:
+    'Reply to: query-12345@helpareporter.net'
+    This extracts that email address.
+    """
+    match = re.search(r"Reply\s*to:\s*([^\s]+)", email_body, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return None
 
 def get_gmail_service():
     creds = Credentials(
@@ -96,22 +107,23 @@ def mark_as_read(service, msg_id: str):
 
 
 def send_reply(service, thread_id: str, original_subject: str,
-               body_text: str, from_address: str):
-    """
-    Simple reply using same thread. Uses plain text.
-    """
+               body_text: str, reply_to: str, from_address: str):
+
+    if not reply_to:
+        print("⚠️ No reply-to address found. Cannot send pitch.")
+        return
+
     if not original_subject.lower().startswith("re:"):
         subject = "Re: " + original_subject
     else:
         subject = original_subject
 
-    message_text = f"Hi,\n\n{body_text}\n"
+    message_text = f"{body_text}\n"
+
     raw_message = (
         f"From: {from_address}\r\n"
-        f"To: HARO\r\n"
+        f"To: {reply_to}\r\n"
         f"Subject: {subject}\r\n"
-        f"In-Reply-To: {thread_id}\r\n"
-        f"References: {thread_id}\r\n"
         f"\r\n"
         f"{message_text}"
     )
@@ -119,12 +131,12 @@ def send_reply(service, thread_id: str, original_subject: str,
     encoded = base64.urlsafe_b64encode(raw_message.encode("utf-8")).decode("utf-8")
 
     message = {
-        "raw": encoded,
-        "threadId": thread_id
+        "raw": encoded
     }
 
     try:
         sent = service.users().messages().send(userId="me", body=message).execute()
-        print("✉️  Reply sent, id:", sent.get("id"))
+        print("✉️ Pitch sent successfully:", sent.get("id"))
     except HttpError as e:
         print("⚠️ Failed to send reply:", e)
+
