@@ -21,7 +21,7 @@ def is_within_processing_window() -> bool:
     """
     Check if current time is within processing windows (Pakistan Time):
     - Window 1: 2 PM - 5 PM (14:00 - 17:00)
-    - Window 2: 9 PM - 11 PM (21:00 - 23:00) - unchanged
+    - Window 2: 9 PM - 12 AM (21:00 - 00:00)
     - Window 3: 2 AM - 5 AM (02:00 - 05:00) next day
     """
     # Get current time in Pakistan Time
@@ -32,8 +32,8 @@ def is_within_processing_window() -> bool:
     # Window 1: 2 PM - 5 PM (14:00 - 17:00) Pakistan Time
     window1 = 14 <= current_hour < 17
     
-    # Window 2: 9 PM - 11 PM (21:00 - 23:00) Pakistan Time - unchanged
-    window2 = 21 <= current_hour <= 23  # Hours 21 (9 PM), 22 (10 PM), and 23 (11 PM)
+    # Window 2: 9 PM - 12 AM (21:00 - 00:00) Pakistan Time
+    window2 = 21 <= current_hour <= 23 or current_hour == 0  # Hours 21 (9 PM), 22 (10 PM), 23 (11 PM), and 0 (12 AM)
     
     # Window 3: 2 AM - 5 AM (02:00 - 05:00) Pakistan Time
     window3 = 2 <= current_hour < 5
@@ -57,7 +57,7 @@ def process_haro_once():
     if not is_within_processing_window():
         now_pakistan = datetime.now(timezone.utc).astimezone(PAKISTAN_TIMEZONE)
         print(f"⏰ Outside processing window. Current Pakistan Time: {now_pakistan.strftime('%H:%M:%S')}")
-        print("   Processing windows: 2-5 PM, 9-11 PM, and 2-5 AM Pakistan Time")
+        print("   Processing windows: 2-5 PM, 9 PM-12 AM, and 2-5 AM Pakistan Time")
         return
     
     print("🔍 Checking for HARO emails...")
