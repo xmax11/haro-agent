@@ -114,8 +114,9 @@ Write a direct, human-sounding response that answers the query:
 - Do NOT make up fake data, statistics, or case studies
 - Do NOT add unnecessary background or sales pitches
 - Just answer what they're asking for in a helpful, expert way
+- IMPORTANT: Write complete, full sentences - do not cut off mid-sentence
 
-End with this signature:
+End with this complete signature:
 
 {persona['name']}
 {persona['title']}
@@ -131,7 +132,7 @@ End with this signature:
                 {"role": "user", "content": user_prompt}
             ],
             temperature=0.7,
-            max_tokens=350
+            max_tokens=600
         )
     except Exception as e:
         print("⚠️ 70B model failed, switching to 8B:", e)
@@ -143,7 +144,7 @@ End with this signature:
                 {"role": "user", "content": user_prompt}
             ],
             temperature=0.7,
-            max_tokens=350
+            max_tokens=600
         )
 
     # Groq client returns .choices[0].message.content
