@@ -64,6 +64,7 @@ def extract_queries(email_body: str):
     """
     Extract individual HARO queries from a HARO email body.
     Assumes blocks starting with 'Summary:' as usual HARO format.
+    Each query block has its own 'Reply to:' address.
     """
     blocks = re.split(r"(?=Summary:)", email_body, flags=re.IGNORECASE)
     queries = []
@@ -76,11 +77,15 @@ def extract_queries(email_body: str):
         category = re.search(r"Category:(.*)", block, re.IGNORECASE)
         query = re.search(r"Query:(.*?)(?=Requirements:|$)", block,
                           re.IGNORECASE | re.DOTALL)
+        # Extract reply-to address from this query block
+        reply_to_match = re.search(r"Reply\s*to:\s*([^\s]+)", block, re.IGNORECASE)
+        reply_to = reply_to_match.group(1).strip() if reply_to_match else None
 
         queries.append({
             "title": summary.group(1).strip() if summary else "",
             "publication": category.group(1).strip() if category else "",
-            "query": query.group(1).strip() if query else ""
+            "query": query.group(1).strip() if query else "",
+            "reply_to": reply_to
         })
 
     return queries

@@ -92,8 +92,13 @@ def process_haro_once():
         # For now, process all relevant queries inside the same HARO email
         for q in queries:
             pitch = generate_pitch(q)
-            from gmail_client import extract_reply_to_address
-            reply_to = extract_reply_to_address(email["body"])
+            # Get reply-to address from the query (extracted from each query block)
+            reply_to = q.get("reply_to")
+            if not reply_to:
+                print(f"⚠️ No reply-to address found for query: {q['title'][:50]}...")
+                print("   Skipping this query.")
+                continue
+            
             send_reply(service, email["threadId"], email["subject"], pitch, reply_to, GMAIL_USER)
 
             log_pitch(q, pitch, status="Sent")
