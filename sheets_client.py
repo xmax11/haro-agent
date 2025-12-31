@@ -25,6 +25,7 @@ def log_pitch(query: dict, pitch: str, status: str = "Sent"):
     Log pitch to Google Sheets. If logging fails, prints warning but doesn't crash.
     Google Sheets automatically expands rows (limit ~10 million rows for new sheets).
     """
+    print(f"🔵 log_pitch called - Title: {query.get('title', 'N/A')[:50]}...")
     try:
         # Check if credentials are available
         creds_json = os.getenv("SHEETS_CREDENTIALS")
@@ -33,35 +34,43 @@ def log_pitch(query: dict, pitch: str, status: str = "Sent"):
             print("   Pitch was still sent successfully. Continuing...")
             return
         
+        print(f"📋 Connecting to Google Sheets (ID: {SPREADSHEET_ID})...")
         client = get_sheets_client()
         spreadsheet = client.open_by_key(SPREADSHEET_ID)
         sheet = spreadsheet.sheet1
+        print(f"✅ Connected to sheet: {sheet.title}")
 
-        # Ensure headers exist - check and add/update if needed
+        # Ensure headers exist - only add if sheet is completely empty
         expected_headers = ["Timestamp", "Title", "Publication", "Query", "Pitch", "Status"]
         
         try:
             all_values = sheet.get_all_values()
-            # If sheet is empty or first row doesn't match headers, set headers
+            # Only add headers if sheet is completely empty
             if not all_values or len(all_values) == 0:
                 # Sheet is completely empty, add headers
                 sheet.append_row(expected_headers, value_input_option="RAW")
                 print("📝 Added headers to empty sheet")
             else:
-                # Check if first row matches expected headers
+                # Sheet has data, assume headers already exist - just verify first row starts with "Timestamp"
                 first_row = all_values[0] if all_values else []
-                if first_row != expected_headers:
-                    # Update first row with correct headers
-                    sheet.update('A1:F1', [expected_headers], value_input_option="RAW")
-                    print("📝 Updated first row with headers")
+                if first_row and len(first_row) > 0 and first_row[0].strip() != "Timestamp":
+                    # First row doesn't look like headers, but we won't overwrite existing data
+                    # Just log a warning - user should manually fix headers if needed
+                    print(f"⚠️ First row doesn't appear to be headers, but not overwriting existing data")
+                    print(f"   First row starts with: {first_row[0] if first_row else 'empty'}")
+                else:
+                    print(f"✅ Headers verified (first row starts with 'Timestamp')")
         except Exception as e:
             print(f"⚠️ Warning when checking headers: {e}")
-            # Try to add headers as fallback
+            # Only try to add headers if we're sure the sheet is empty
             try:
-                sheet.append_row(expected_headers, value_input_option="RAW")
-                print("📝 Added headers (fallback method)")
+                # Try to check one more time if it's really empty
+                test_values = sheet.get_all_values()
+                if not test_values or len(test_values) == 0:
+                    sheet.append_row(expected_headers, value_input_option="RAW")
+                    print("📝 Added headers (fallback method - sheet was empty)")
             except Exception as e2:
-                print(f"⚠️ Failed to add headers: {e2}")
+                print(f"⚠️ Could not verify/add headers: {e2}, continuing anyway...")
 
         now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -74,8 +83,27 @@ def log_pitch(query: dict, pitch: str, status: str = "Sent"):
             status
         ]
 
-        sheet.append_row(row, value_input_option="RAW")
-        print(f"✅ Logged pitch to Google Sheets")
+        print(f"📊 Attempting to log pitch to Google Sheets...")
+        print(f"   Row data: {len(row)} columns, Title: {row[1][:50]}...")
+        
+        # Append the row
+        try:
+            sheet.append_row(row, value_input_option="RAW")
+            print(f"✅ Successfully appended row to Google Sheets")
+            
+            # Verify it was added by checking the last row
+            try:
+                all_values_after = sheet.get_all_values()
+                if all_values_after and len(all_values_after) > 0:
+                    last_row = all_values_after[-1]
+                    print(f"✅ Verified: Last row in sheet has {len(last_row)} columns")
+                else:
+                    print("⚠️ Warning: Could not verify row was added (sheet appears empty)")
+            except Exception as verify_error:
+                print(f"⚠️ Warning: Could not verify row addition: {verify_error}")
+        except Exception as append_error:
+            print(f"❌ Failed to append row: {type(append_error).__name__}: {append_error}")
+            raise  # Re-raise to be caught by outer exception handler
     except gspread.exceptions.APIError as e:
         # Handle API errors (quota exceeded, sheet full, etc.)
         print(f"⚠️ Failed to log to Google Sheets (API Error): {e}")
