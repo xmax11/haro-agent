@@ -10,10 +10,10 @@ import re
 def extract_reply_to_address(email_body: str) -> str | None:
     """
     HARO emails include a line like:
-    'Reply to: query-12345@helpareporter.net'
+    'Email: reply-12345@helpareporter.com'
     This extracts that email address.
     """
-    match = re.search(r"Reply\s*to:\s*([^\s]+)", email_body, re.IGNORECASE)
+    match = re.search(r"Email:\s*([^\s]+)", email_body, re.IGNORECASE)
     if match:
         return match.group(1).strip()
     return None
