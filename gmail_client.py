@@ -19,16 +19,20 @@ def extract_reply_to_address(email_body: str) -> str | None:
     return None
 
 def get_gmail_service():
-    creds = Credentials(
-        None,
-        refresh_token=os.getenv("GMAIL_REFRESH_TOKEN"),
-        token_uri="https://oauth2.googleapis.com/token",
-        client_id=os.getenv("GMAIL_CLIENT_ID"),
-        client_secret=os.getenv("GMAIL_CLIENT_SECRET"),
-        scopes=["https://www.googleapis.com/auth/gmail.modify"],
-    )
-    service = build("gmail", "v1", credentials=creds)
-    return service
+    try:
+        creds = Credentials(
+            None,
+            refresh_token=os.getenv("GMAIL_REFRESH_TOKEN"),
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=os.getenv("GMAIL_CLIENT_ID"),
+            client_secret=os.getenv("GMAIL_CLIENT_SECRET"),
+            scopes=["https://www.googleapis.com/auth/gmail.modify"],
+        )
+        service = build("gmail", "v1", credentials=creds)
+        return service
+    except Exception as e:
+        print(f"❌ Failed to create Gmail service: {e}")
+        raise
 
 
 def _parse_internal_date(ms_str: str) -> datetime:
@@ -46,12 +50,18 @@ def fetch_haro_emails(service):
     Returns list of dicts with:
         id, threadId, subject, body, timestamp (datetime, UTC)
     """
-    results = service.users().messages().list(
-        userId="me",
-        q='is:unread subject:"HARO"'
-    ).execute()
+    try:
+        results = service.users().messages().list(
+            userId="me",
+            q='is:unread subject:"HARO"'
+        ).execute()
 
-    messages = results.get("messages", [])
+        messages = results.get("messages", [])
+        print(f"📧 Found {len(messages)} unread HARO emails.")
+    except Exception as e:
+        print(f"❌ Failed to fetch HARO emails: {e}")
+        return []
+    
     emails = []
 
     for msg in messages:
