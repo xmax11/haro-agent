@@ -51,8 +51,8 @@ def log_pitch(query: dict, pitch: str, status: str = "Sent"):
             # Only add headers if sheet is completely empty
             if not all_values or len(all_values) == 0:
                 # Sheet is completely empty, add headers
-                result = sheet.append_row(expected_headers, value_input_option="RAW")
-                print(f"📝 Added headers to empty sheet: {result}")
+                sheet.update('A1:F1', [expected_headers], value_input_option="RAW")
+                print("📝 Added headers to A1:F1")
             else:
                 # Sheet has data, assume headers already exist - just verify first row starts with "Timestamp"
                 first_row = all_values[0] if all_values else []
@@ -70,8 +70,8 @@ def log_pitch(query: dict, pitch: str, status: str = "Sent"):
                 # Try to check one more time if it's really empty
                 test_values = sheet.get_all_values()
                 if not test_values or len(test_values) == 0:
-                    result = sheet.append_row(expected_headers, value_input_option="RAW")
-                    print(f"📝 Added headers (fallback method - sheet was empty): {result}")
+                    sheet.update('A1:F1', [expected_headers], value_input_option="RAW")
+                    print("📝 Added headers to A1:F1 (fallback)")
             except Exception as e2:
                 print(f"⚠️ Could not verify/add headers: {e2}, continuing anyway...")
 
@@ -92,21 +92,26 @@ def log_pitch(query: dict, pitch: str, status: str = "Sent"):
         
         # Append the row
         try:
-            result = sheet.append_row(row, value_input_option="RAW")
-            print(f"✅ Successfully appended row to Google Sheets: {result}")
+            # Find the last row with data in column A
+            all_values = sheet.get_all_values()
+            last_row = len(all_values)
+            # Append to the next row, columns A-F
+            range_to_update = f'A{last_row + 1}:F{last_row + 1}'
+            sheet.update(range_to_update, [row], value_input_option="RAW")
+            print(f"✅ Successfully updated Google Sheets range: {range_to_update}")
             
-            # Verify it was added by checking the last row
+            # Verify it was added
             try:
                 all_values_after = sheet.get_all_values()
-                if all_values_after and len(all_values_after) > 0:
-                    last_row = all_values_after[-1]
-                    print(f"✅ Verified: Last row in sheet has {len(last_row)} columns: {last_row[:6]}")
+                if all_values_after and len(all_values_after) > last_row:
+                    last_row_data = all_values_after[last_row][:6]
+                    print(f"✅ Verified: Row {last_row + 1} has data: {last_row_data}")
                 else:
-                    print("⚠️ Warning: Could not verify row was added (sheet appears empty)")
+                    print("⚠️ Warning: Could not verify row was added")
             except Exception as verify_error:
                 print(f"⚠️ Warning: Could not verify row addition: {verify_error}")
         except Exception as append_error:
-            print(f"❌ Failed to append row: {type(append_error).__name__}: {append_error}")
+            print(f"❌ Failed to update Google Sheets: {type(append_error).__name__}: {append_error}")
             raise  # Re-raise to be caught by outer exception handler
     except gspread.exceptions.APIError as e:
         # Handle API errors (quota exceeded, sheet full, etc.)
