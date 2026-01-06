@@ -26,6 +26,9 @@ def log_pitch(query: dict, pitch: str, status: str = "Sent"):
     Google Sheets automatically expands rows (limit ~10 million rows for new sheets).
     """
     print(f"🔵 log_pitch called - Title: {query.get('title', 'N/A')[:50]}...")
+    print(f"   Query keys: {list(query.keys())}")
+    print(f"   Pitch length: {len(pitch)}")
+    print(f"   Status: {status}")
     try:
         # Check if credentials are available
         creds_json = os.getenv("SHEETS_CREDENTIALS")
@@ -85,6 +88,7 @@ def log_pitch(query: dict, pitch: str, status: str = "Sent"):
 
         print(f"📊 Attempting to log pitch to Google Sheets...")
         print(f"   Row data: {len(row)} columns, Title: {row[1][:50]}...")
+        print(f"   Full row: {[str(x)[:100] for x in row]}")
         
         # Append the row
         try:

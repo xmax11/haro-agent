@@ -29,6 +29,8 @@ def is_within_processing_window() -> bool:
     now_pakistan = now_utc.astimezone(PAKISTAN_TIMEZONE)
     current_hour = now_pakistan.hour
     
+    print(f"🕒 Current Pakistan Time: {now_pakistan.strftime('%Y-%m-%d %H:%M:%S')} (Hour: {current_hour})")
+    
     # Window 1: 2 PM - 5 PM (14:00 - 17:00) Pakistan Time
     window1 = 14 <= current_hour < 17
     
@@ -38,7 +40,10 @@ def is_within_processing_window() -> bool:
     # Window 3: 2 AM - 5 AM (02:00 - 05:00) Pakistan Time
     window3 = 2 <= current_hour < 5
     
-    return window1 or window2 or window3
+    in_window = window1 or window2 or window3
+    print(f"⏰ In processing window: {in_window} (Window1: {window1}, Window2: {window2}, Window3: {window3})")
+    
+    return in_window
 
 
 def is_recent_email(ts: datetime, window_minutes: int = 30) -> bool:
@@ -52,9 +57,9 @@ def is_recent_email(ts: datetime, window_minutes: int = 30) -> bool:
     return delta <= timedelta(minutes=window_minutes)
 
 
-def process_haro_once():
+def process_haro_once(force_run: bool = False):
     # Check if we're within processing time window (Pakistan Time)
-    if not is_within_processing_window():
+    if not force_run and not is_within_processing_window():
         now_pakistan = datetime.now(timezone.utc).astimezone(PAKISTAN_TIMEZONE)
         print(f"⏰ Outside processing window. Current Pakistan Time: {now_pakistan.strftime('%H:%M:%S')}")
         print("   Processing windows: 2-5 PM, 9 PM-12 AM, and 2-5 AM Pakistan Time")
@@ -113,5 +118,7 @@ def process_haro_once():
 
 
 if __name__ == "__main__":
+    import sys
+    force = len(sys.argv) > 1 and sys.argv[1] == "--force"
     # No loops here; GitHub Actions will call this every 15 minutes in your windows
-    process_haro_once()
+    process_haro_once(force_run=force)
