@@ -3,6 +3,10 @@ from datetime import datetime, timedelta, timezone
 
 from dotenv import load_dotenv
 
+print("🔄 Loading environment variables...")
+load_dotenv()
+print("✅ Environment loaded.")
+
 from gmail_client import get_gmail_service, fetch_haro_emails, mark_as_read, send_reply
 from haro_parser import parse_haro_email
 from pitch_generator import generate_pitch
@@ -58,6 +62,7 @@ def is_recent_email(ts: datetime, window_minutes: int = 30) -> bool:
 
 
 def process_haro_once(force_run: bool = False):
+    print("🚀 Starting HARO processing...")
     # Check if we're within processing time window (Pakistan Time)
     if not force_run and not is_within_processing_window():
         now_pakistan = datetime.now(timezone.utc).astimezone(PAKISTAN_TIMEZONE)
@@ -66,7 +71,9 @@ def process_haro_once(force_run: bool = False):
         return
     
     print("🔍 Checking for HARO emails...")
+    print("🔗 Connecting to Gmail API...")
     service = get_gmail_service()
+    print("✅ Connected to Gmail.")
     emails = fetch_haro_emails(service)
 
     if not emails:
