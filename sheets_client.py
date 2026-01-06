@@ -51,8 +51,8 @@ def log_pitch(query: dict, pitch: str, status: str = "Sent"):
             # Only add headers if sheet is completely empty
             if not all_values or len(all_values) == 0:
                 # Sheet is completely empty, add headers
-                sheet.append_row(expected_headers, value_input_option="RAW")
-                print("📝 Added headers to empty sheet")
+                sheet.append_row(expected_headers, value_input_option="USER_ENTERED")
+                    print("📝 Added headers to empty sheet")
             else:
                 # Sheet has data, assume headers already exist - just verify first row starts with "Timestamp"
                 first_row = all_values[0] if all_values else []
@@ -70,7 +70,7 @@ def log_pitch(query: dict, pitch: str, status: str = "Sent"):
                 # Try to check one more time if it's really empty
                 test_values = sheet.get_all_values()
                 if not test_values or len(test_values) == 0:
-                    sheet.append_row(expected_headers, value_input_option="RAW")
+            sheet.append_row(expected_headers, value_input_option="USER_ENTERED")
                     print("📝 Added headers (fallback method - sheet was empty)")
             except Exception as e2:
                 print(f"⚠️ Could not verify/add headers: {e2}, continuing anyway...")
@@ -92,7 +92,7 @@ def log_pitch(query: dict, pitch: str, status: str = "Sent"):
         
         # Append the row
         try:
-            sheet.append_row(row, value_input_option="RAW")
+            sheet.append_row(row, value_input_option="USER_ENTERED")
             print(f"✅ Successfully appended row to Google Sheets")
             
             # Verify it was added by checking the last row
