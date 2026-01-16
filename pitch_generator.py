@@ -94,7 +94,7 @@ def generate_pitch(query: dict) -> str:
     
     system_msg = (
         f"You are {persona['name']}, {persona['title']} at "
-        f"{persona['company']} ({persona['website']}).{expertise_note} "
+        f"{persona['website']}.{expertise_note} "
         f"Write like a real human expert - direct, conversational, and helpful. No marketing fluff or buzzwords."
     )
 
@@ -120,7 +120,6 @@ End with this complete signature:
 
 {persona['name']}
 {persona['title']}
-{persona['company']}
 {persona['website']}
 """
 
