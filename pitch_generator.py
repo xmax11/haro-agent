@@ -42,7 +42,7 @@ Generate a JSON object with:
 - "name": A professional first name (use "{BASE_PERSONA['name']}" as the name)
 - "title": A specific expert title relevant to the query topic (e.g., "Energy Efficiency Specialist", "Personal Finance Advisor", "Digital Transformation Consultant")
 - "company": A credible company name (use "{BASE_PERSONA['company']}" format, or create a relevant one)
-- "website": A website URL (use format like "{BASE_PERSONA['website']}")
+- "website": Use exactly "{BASE_PERSONA['website']}" as the website URL
 - "expertise": One sentence describing their specific expertise in the query's domain
 
 Make the title and expertise highly relevant to the query topic. Be specific and credible.
@@ -70,10 +70,10 @@ Respond ONLY with valid JSON, no other text.
         
         dynamic_persona = json.loads(persona_json)
         
-        # Ensure base fields exist
+        # Ensure base fields exist - always use base website
         dynamic_persona["name"] = dynamic_persona.get("name", BASE_PERSONA["name"])
         dynamic_persona["company"] = dynamic_persona.get("company", BASE_PERSONA["company"])
-        dynamic_persona["website"] = dynamic_persona.get("website", BASE_PERSONA["website"])
+        dynamic_persona["website"] = BASE_PERSONA["website"]  # Always use base website
         
         return dynamic_persona
         
