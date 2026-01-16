@@ -43,37 +43,26 @@ def log_pitch(query: dict, pitch: str, status: str = "Sent"):
         sheet = spreadsheet.sheet1
         print(f"✅ Connected to sheet: {sheet.title}")
 
+        # Get all values once to minimize API calls
+        all_values = sheet.get_all_values()
+        print(f"📊 Retrieved {len(all_values)} rows from sheet")
+
         # Ensure headers exist - only add if sheet is completely empty
         expected_headers = ["Timestamp", "Title", "Publication", "Query", "Pitch", "Status"]
         
-        try:
-            all_values = sheet.get_all_values()
-            # Only add headers if sheet is completely empty
-            if not all_values or len(all_values) == 0:
-                # Sheet is completely empty, add headers
-                sheet.update('A1:F1', [expected_headers], value_input_option="RAW")
-                print("📝 Added headers to A1:F1")
+        if not all_values or len(all_values) == 0:
+            # Sheet is completely empty, add headers
+            sheet.update('A1:F1', [expected_headers], value_input_option="RAW")
+            print("📝 Added headers to A1:F1")
+            # Refresh data after adding headers
+            all_values = [expected_headers]
+        else:
+            # Sheet has data, verify headers
+            first_row = all_values[0] if all_values else []
+            if first_row and len(first_row) > 0 and first_row[0].strip() == "Timestamp":
+                print(f"✅ Headers verified (first row starts with 'Timestamp')")
             else:
-                # Sheet has data, assume headers already exist - just verify first row starts with "Timestamp"
-                first_row = all_values[0] if all_values else []
-                if first_row and len(first_row) > 0 and first_row[0].strip() != "Timestamp":
-                    # First row doesn't look like headers, but we won't overwrite existing data
-                    # Just log a warning - user should manually fix headers if needed
-                    print(f"⚠️ First row doesn't appear to be headers, but not overwriting existing data")
-                    print(f"   First row starts with: {first_row[0] if first_row else 'empty'}")
-                else:
-                    print(f"✅ Headers verified (first row starts with 'Timestamp')")
-        except Exception as e:
-            print(f"⚠️ Warning when checking headers: {e}")
-            # Only try to add headers if we're sure the sheet is empty
-            try:
-                # Try to check one more time if it's really empty
-                test_values = sheet.get_all_values()
-                if not test_values or len(test_values) == 0:
-                    sheet.update('A1:F1', [expected_headers], value_input_option="RAW")
-                    print("📝 Added headers to A1:F1 (fallback)")
-            except Exception as e2:
-                print(f"⚠️ Could not verify/add headers: {e2}, continuing anyway...")
+                print(f"⚠️ First row doesn't appear to be headers: {first_row[:3] if first_row else 'empty'}")
 
         now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -90,26 +79,24 @@ def log_pitch(query: dict, pitch: str, status: str = "Sent"):
         print(f"   Row data: {len(row)} columns, Title: {row[1][:50]}...")
         print(f"   Full row: {[str(x)[:100] for x in row]}")
         
+        # Find the next available row (after headers)
+        next_row = len(all_values) + 1
+        range_to_update = f'A{next_row}:F{next_row}'
+        
         # Append the row
         try:
-            # Find the last row with data in column A
-            all_values = sheet.get_all_values()
-            last_row = len(all_values)
-            # Append to the next row, columns A-F
-            range_to_update = f'A{last_row + 1}:F{last_row + 1}'
             sheet.update(range_to_update, [row], value_input_option="RAW")
             print(f"✅ Successfully updated Google Sheets range: {range_to_update}")
             
-            # Verify it was added
-            try:
-                all_values_after = sheet.get_all_values()
-                if all_values_after and len(all_values_after) > last_row:
-                    last_row_data = all_values_after[last_row][:6]
-                    print(f"✅ Verified: Row {last_row + 1} has data: {last_row_data}")
-                else:
-                    print("⚠️ Warning: Could not verify row was added")
-            except Exception as verify_error:
-                print(f"⚠️ Warning: Could not verify row addition: {verify_error}")
+            # Optional verification (only if DEBUG_SHEETS is set)
+            if os.getenv("DEBUG_SHEETS") == "true":
+                try:
+                    # Quick check of the specific row we just updated
+                    check_values = sheet.get(range_to_update)
+                    if check_values and len(check_values) > 0:
+                        print(f"✅ Verified: Row {next_row} has data: {check_values[0][:3]}...")
+                except Exception as verify_error:
+                    print(f"⚠️ Warning: Could not verify row addition: {verify_error}")
         except Exception as append_error:
             print(f"❌ Failed to update Google Sheets: {type(append_error).__name__}: {append_error}")
             raise  # Re-raise to be caught by outer exception handler
